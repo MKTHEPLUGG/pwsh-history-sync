@@ -63,6 +63,7 @@ func main() {
     }
 
     // Load Git credentials
+    log.Println("Trying to load git credentials")
     username, password, repo, err := loadCredentials()
     if err != nil {
         fmt.Printf("Error loading credentials: %s\n", err)
