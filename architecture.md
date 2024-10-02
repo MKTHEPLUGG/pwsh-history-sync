@@ -1,5 +1,3 @@
-Creating your own binary for syncing PowerShell history sounds like a great project to dive deeper into coding, especially since it involves concepts like file I/O, networking, and potentially security for syncing data between devices. It would allow you to build a full system while learning more about development.
-
 ### Cloud Storage (OneDrive) Option:
 If you're looking for something that can be set up quickly while focusing more on the development side later, you can configure OneDrive (or any similar cloud storage service) to sync your PowerShell history file. You can create a symbolic link (symlink) to store the `ConsoleHost_history.txt` file in a directory that is synced with OneDrive.
 
@@ -35,6 +33,19 @@ mkdir pwsh-history-sync
 cd pwsh-history-sync
 go mod init github.com/yourusername/pwsh-history-sync
 ```
+
+### steps of script
+
+1. Check if history directory already exists, if not enable psreadline module
+2. if dir already exists check if it's linked with git, if not link it with git
+3. Depending on whether it was linked or not we need to push/pull
+4. push/pull periodically
+5. ...
+6. refinement
+7. logging
+8. security hardening
+9. automation with pipeline for building
+
 
 ---
 
