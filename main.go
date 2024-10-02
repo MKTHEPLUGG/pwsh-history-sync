@@ -26,7 +26,6 @@ type Config struct {
 // Global-like variable for the PowerShell history file path
 var historyFilePath string
 var gitRepoPath string
-var homeDir string
 var configFilePath string
 
 func init() {
@@ -43,10 +42,13 @@ func init() {
 
     // Set the Git repository path to the same directory as the history file
     gitRepoPath = filepath.Join(appDataPath, "Microsoft", "Windows", "PowerShell", "PSReadLine")
+
+    homeDir := getHomeDir()
+    configFilePath = filepath.Join(homeDir, ".config", "config.yaml")
 }
 
 func main() {
-    log.Println("Setting the users home directory")
+    log.Println("determining the users home directory")
     homeDir := getHomeDir()
     if homeDir == "" {
         fmt.Println("Could not determine the home directory.")
@@ -97,7 +99,7 @@ func getHomeDir() string {
 
 // loadCredentials loads credentials from environment variables or config file
 func loadCredentials() (string, string, string, error) {
-    configFilePath = filepath.Join(homeDir, ".config", "config.yaml")
+
     // Check if credentials are set in environment variables
     username := os.Getenv("GIT_USERNAME")
     password := os.Getenv("GIT_TOKEN")
