@@ -6,6 +6,7 @@ import (
     "os"
     "path/filepath"
     "log"
+    "runtime"
 
     git "gopkg.in/src-d/go-git.v4"
     "gopkg.in/src-d/go-git.v4/plumbing/transport/http"
@@ -25,6 +26,8 @@ type Config struct {
 // Global-like variable for the PowerShell history file path
 var historyFilePath string
 var gitRepoPath string
+var homeDir string
+var configFilePath string
 
 func init() {
     // Get the APPDATA environment variable
@@ -43,7 +46,15 @@ func init() {
 }
 
 func main() {
-    log.Println("Starting sync...")
+    log.Println("Setting the users home directory")
+    homeDir := getHomeDir()
+    if homeDir == "" {
+        fmt.Println("Could not determine the home directory.")
+    } else {
+        fmt.Println("User's home directory is:", homeDir)
+    }
+
+    log.Println("Checking if history file path was set by init function")
     if historyFilePath == "" {
         fmt.Println("Failed to set history file path.")
         return
@@ -65,8 +76,28 @@ func main() {
     }
 }
 
+// getHomeDir gets the user's home directory based on the operating system.
+func getHomeDir() string {
+    if runtime.GOOS == "windows" {
+        // On Windows, use USERPROFILE or HOMEPATH
+        home := os.Getenv("USERPROFILE")
+        if home == "" {
+            home = os.Getenv("HOMEPATH")
+        }
+        if home == "" {
+            fmt.Println("Could not determine the home directory on Windows.")
+        }
+        return home
+    }
+
+    // On Linux/macOS, use HOME environment variable
+    return os.Getenv("HOME")
+}
+
+
 // loadCredentials loads credentials from environment variables or config file
 func loadCredentials() (string, string, string, error) {
+    configFilePath = filepath.Join(homeDir, ".config", "config.yaml")
     // Check if credentials are set in environment variables
     username := os.Getenv("GIT_USERNAME")
     password := os.Getenv("GIT_TOKEN")
@@ -79,7 +110,7 @@ func loadCredentials() (string, string, string, error) {
 
     // If environment variables are not set, load from config file
     fmt.Println("Loading credentials from config file.")
-    config, err := loadConfig("config.yaml")
+    config, err := loadConfig(configFilePath)
     if err != nil {
         return "", "", "", err
     }
