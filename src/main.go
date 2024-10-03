@@ -7,11 +7,12 @@ import (
     "path/filepath"
     "log"
     "runtime"
+    "time"
 
     git "gopkg.in/src-d/go-git.v4"
-    "gopkg.in/src-d/go-git.v4/plumbing/transport/http"
     "gopkg.in/src-d/go-git.v4/config"
     "gopkg.in/yaml.v2"
+//     gitHttp "gopkg.in/src-d/go-git.v4/plumbing/transport/http"  // only needed if you want to auth every request and not bake it into url
 )
 
 // Config struct to hold Git credentials from YAML
@@ -45,7 +46,41 @@ func init() {
 
     homeDir := getHomeDir()
     configFilePath = filepath.Join(homeDir, ".config", "config.yaml")
+
+    // Create a backup if the history file exists
+    if historyFileExists() {
+        err := createBackup(appDataPath)
+        if err != nil {
+            fmt.Printf("Error creating backup: %s\n", err)
+        } else {
+            fmt.Println("Backup of the history file created successfully.")
+        }
+    } else {
+        fmt.Println("No history file found, no backup needed.")
+    }
+
 }
+
+// historyFileExists checks if the history file exists
+func historyFileExists() bool {
+    _, err := os.Stat(historyFilePath)
+    return !os.IsNotExist(err)
+}
+
+// createBackup creates a backup of the history file in the APPDATA directory
+func createBackup(appDataPath string) error {
+    // Construct the backup file name inside the APPDATA folder with a timestamp
+    backupFileName := filepath.Join(appDataPath, fmt.Sprintf("ConsoleHost_history_backup_%s.txt", time.Now().Format("20060102_150405")))
+
+    // Rename (move) the existing file to the backup location
+    err := os.Rename(historyFilePath, backupFileName)
+    if err != nil {
+        return fmt.Errorf("failed to create backup: %w", err)
+    }
+
+    return nil
+}
+
 
 func main() {
     log.Println("determining the users home directory")
@@ -172,6 +207,7 @@ func linkAndPullFromRemote(username, password, repoURL string) error {
     if !remoteExists {
         // Add the remote for pulling
         remoteConfig := fmt.Sprintf("https://%s:%s@%s", username, password, repoURL)
+        log.Println("remote url is:", remoteConfig)
 
         _, err = repo.CreateRemote(&config.RemoteConfig{
             Name: "origin",
@@ -184,6 +220,8 @@ func linkAndPullFromRemote(username, password, repoURL string) error {
     }
 
     // Now pull from the remote
+    remoteConfig := fmt.Sprintf("https://%s:%s@%s", username, password, repoURL)
+    log.Println("remote url is:", remoteConfig, "trying to pull from it...")
     err = pullFromRemote(repo, username, password)
     if err != nil {
         return fmt.Errorf("failed to pull from remote: %w", err)
@@ -202,10 +240,10 @@ func pullFromRemote(repo *git.Repository, username, password string) error {
     // Pull the latest changes from the origin
     err = worktree.Pull(&git.PullOptions{
         RemoteName: "origin",
-        Auth: &http.BasicAuth{
-            Username: username, // GitHub username
-            Password: password, // Personal access token
-        },
+//         Auth: &gitHttp.BasicAuth{     // auth already handled by creating url with token while adding the remote
+//             Username: username, // GitHub username
+//             Password: password, // Personal access token
+//         },
     })
 
     if err != nil && err == git.NoErrAlreadyUpToDate {
